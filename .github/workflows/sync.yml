@@ -1,0 +1,36 @@
+name: Sync to Repo B without CNAME
+
+on:
+  push:
+    branches:
+      - main  # Change to 'master' if your default branch is master
+
+jobs:
+  git-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo A
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Adjust CNAME for Repo B
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@://github.com"
+          
+          # Delete Repo A's custom domain CNAME file in the runner workspace
+          rm -f CNAME
+          
+          # Local commit so git-sync sees the removal
+          git add CNAME || true
+          git commit -m "Strip Repo A CNAME for Repo B sync" || true
+
+      - name: Push to Repo B
+        uses: wei/git-sync@v3
+        with:
+          source_repo: "://github.com{{ github.repository }}"
+          source_branch: "main" # Change to 'master' if your default branch is master
+          destination_repo: "://github.com/aoishik/aoishik.github.io"
+          destination_branch: "main" # Change to 'master' if your default branch is master
+          destination_token: ${{ secrets.SYNC_PAT }}
